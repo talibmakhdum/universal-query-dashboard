@@ -1,40 +1,59 @@
 # Universal Query Dashboard
 
-[![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
-[![Google Gemini](https://img.shields.io/badge/Google%20Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+## Overview
+The Universal Query Dashboard is a versatile tool designed to simplify the process of querying various data sources and presenting results in a user-friendly manner. Built with scalability in mind, this project aims to provide a seamless experience for data analysts and developers alike.
 
-**Talk to your data in plain English.**  
-Upload any CSV → ask natural questions → get instant insights, beautiful charts, and smart answers — powered by Google Gemini.
+## Features
+- Multi-source query support: Connect to various databases and APIs.
+- Intuitive user interface: Easy navigation and interaction.
+- Advanced filtering and sorting capabilities.
+- Real-time data visualization.
+- Built-in authentication and authorization mechanisms.
 
-No SQL. No coding. Just curiosity.
+## Tech Stack
+- **Frontend:** React, Redux, CSS
+- **Backend:** Node.js, Express
+- **Database:** MongoDB, PostgreSQL
+- **Deployment:** Docker, AWS
 
-## ✨ Key Features
+## Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/talibmakhdum/universal-query-dashboard.git
+   cd universal-query-dashboard
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the application:
+   ```bash
+   npm start
+   ```
 
-- Natural language questions (“What’s the top product by revenue last quarter?”)
-- Auto-generated interactive charts (bar, line, pie, area, KPI cards)
-- Follow-up questions with full conversation memory
-- Smart query suggestions based on your dataset
-- Export charts (PNG) and data (CSV)
-- Secure local processing — your data stays private
-- Fast, responsive UI built for modern browsers
+## Usage
+1. Open the application in your browser at `http://localhost:3000`.
+2. Create an account or log in with your existing credentials.
+3. Select a data source from the dashboard and start querying.
 
-## 🛠 Tech Stack
+## Project Structure
+```
+/universal-query-dashboard
+├── /client  # Contains frontend code
+│   ├── /src
+│   └── /public
+├── /server  # Contains backend code
+│   └── /routes
+└── /docker  # Docker configurations
+```  
 
-- **Frontend**: Next.js 14 (App Router) · TypeScript · Tailwind CSS · Recharts  
-- **Backend**: FastAPI · Python 3.10+ · SQLite  
-- **AI**: Google Gemini Pro (natural language → SQL + insights)  
-- **Validation**: Zod · Pydantic  
+## Contributing
+We welcome contributions from the community. Please follow these steps:
+1. Fork the repository.
+2. Create a new branch (`git checkout -b feature/YourFeature`).
+3. Make your changes and commit them (`git commit -m 'Add some feature'`).
+4. Push to the branch (`git push origin feature/YourFeature`).
+5. Open a pull request.
 
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js ≥ 18
-- Python ≥ 3.10
-- [Google Gemini API Key](https://ai.google.dev/)
-
-### 1. Clone & Install
-```bash
-git clone https://github.com/talibmakhdum/universal-query-dashboard.git
-cd universal-query-dashboard
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
