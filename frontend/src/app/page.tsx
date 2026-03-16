@@ -1,278 +1,197 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
-import { FileUpload } from '@/components/FileUpload'
-import { ChartDisplay } from '@/components/ChartDisplay'
-import { QueryChips } from '@/components/QueryChips'
-import { LoadingSpinner } from '@/components/LoadingSpinner'
-import { QueryProvider, useQueryContext } from '@/lib/context'
-import { QueryResponse, QueryHistoryItem } from '@/types'
-import { api } from '@/lib/api'
-import { MessageSquare, Download, Upload, Send } from 'lucide-react'
+import React, { useState, useEffect } from 'react';
+import { ChatPanel } from '@/components/chat_panel';
+import { ThoughtProcess } from '@/components/thought_process';
+import { Charts } from '@/components/charts';
+import { Upload, Database, LayoutDashboard, Table as TableIcon } from 'lucide-react';
+import axios from 'axios';
+import '@/styles/glass.css';
 
-// Main component wrapped with context provider
-function DashboardContent() {
-  const { 
-    queryHistory, 
-    currentTable, 
-    setQueryHistory, 
-    setCurrentTable,
-    isProcessing 
-  } = useQueryContext()
-  
-  const [inputValue, setInputValue] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [suggestedQueries, setSuggestedQueries] = useState<string[]>([])
-  const chatEndRef = useRef<HTMLDivElement>(null)
+const API_BASE = 'http://localhost:8000';
 
-  // Scroll to bottom of chat when new messages arrive
+export default function Dashboard() {
+  const [messages, setMessages] = useState<any[]>([]);
+  const [inputValue, setInputValue] = useState('');
+  const [steps, setSteps] = useState<string[]>([]);
+  const [currentData, setCurrentData] = useState<any[]>([]);
+  const [chartType, setChartType] = useState<any>('none');
+  const [isLoading, setIsLoading] = useState(false);
+  const [tableName, setTableName] = useState('vehicles');
+  const [availableTables, setAvailableTables] = useState<string[]>([]);
+  const [isCsvMode, setIsCsvMode] = useState(false);
+  const [csvPath, setCsvPath] = useState('');
+
+  // Fetch initial tables
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [queryHistory])
-
-  // Handle file upload
-  const handleFileUpload = async (file: File) => {
-    try {
-      const result = await api.uploadFile(file)
-      setCurrentTable(result.tableName)
-      setSuggestedQueries(generateSuggestions(result.schema))
-      setError(null)
-    } catch (err) {
-      console.error('Upload error:', err)
-      setError('Failed to upload file. Please try again.')
-    }
-  }
-
-  // Generate suggested queries based on available columns
-  const generateSuggestions = (schema: Record<string, string>): string[] => {
-    const columns = Object.keys(schema)
-    const suggestions: string[] = []
-    
-    // Find numeric and categorical columns
-    const numericCols = columns.filter(col => 
-      schema[col].toLowerCase().includes('int') || 
-      schema[col].toLowerCase().includes('float')
-    )
-    const categoricalCols = columns.filter(col => 
-      !numericCols.includes(col) && 
-      col.toLowerCase() !== 'date' &&
-      col.toLowerCase() !== 'datetime'
-    )
-    
-    // Generate suggestions based on column types
-    if (numericCols.length > 0 && categoricalCols.length > 0) {
-      suggestions.push(
-        `Average ${numericCols[0]} by ${categoricalCols[0]}`,
-        `Total ${numericCols[0]} by ${categoricalCols[0]}`,
-        `Top 5 ${categoricalCols[0]} by ${numericCols[0]}`
-      )
-    }
-    
-    return [...new Set(suggestions)].slice(0, 5)
-  }
-
-  // Handle query submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!inputValue.trim()) return
-    
-    if (!currentTable) {
-      setError('Please upload a CSV file first')
-      return
-    }
-
-    try {
-      setError(null)
-      
-      const response: QueryResponse = await api.queryData({
-        question: inputValue,
-        tableName: currentTable,
-        history: queryHistory
-      })
-
-      if (response.success) {
-        const newItem: QueryHistoryItem = {
-          id: Date.now(),
-          question: inputValue,
-          sql: response.sql || '',
-          data: response.data,
-          chartType: response.chartType,
-          insight: response.insight,
-          timestamp: new Date().toISOString()
-        }
-        
-        setQueryHistory(prev => [...prev, newItem])
-        setInputValue('')
-      } else {
-        setError(response.error || 'Failed to process query')
+    const fetchTables = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/tables`);
+        setAvailableTables(res.data.tables);
+      } catch (e) {
+        console.error("Failed to fetch tables", e);
       }
-    } catch (err) {
-      console.error('Query error:', err)
-      setError('An error occurred while processing your query')
+    };
+    fetchTables();
+  }, []);
+
+  const handleSend = async () => {
+    if (!inputValue.trim()) return;
+
+    const userMsg = { id: Date.now().toString(), type: 'user' as const, text: inputValue };
+    setMessages(prev => [...prev, userMsg]);
+    setInputValue('');
+    setIsLoading(true);
+    setSteps([]);
+
+    try {
+      const payload = {
+        question: inputValue,
+        table_name: tableName,
+        session_id: "demo-session",
+        is_csv: isCsvMode,
+        csv_path: csvPath
+      };
+
+      const res = await axios.post(`${API_BASE}/query`, payload);
+      
+      if (res.data.success) {
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          type: 'bot',
+          text: res.data.insight || "I've analyzed the data for you.",
+          sql: res.data.sql
+        }]);
+        setSteps(res.data.thought_process || []);
+        setCurrentData(res.data.data || []);
+        setChartType(res.data.chartType || 'bar');
+      } else {
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          type: 'bot',
+          text: `Error: ${res.data.error}`
+        }]);
+      }
+    } catch (e) {
+      console.error(e);
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        type: 'bot',
+        text: "Sorry, I encountered an error connecting to the agent."
+      }]);
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
-  // Handle suggested query click
-  const handleSuggestedQueryClick = (query: string) => {
-    setInputValue(query)
-  }
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  // Export chart as PNG
-  const handleExportPng = () => {
-    // This would be implemented with html2canvas
-    alert('PNG export functionality would go here')
-  }
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await axios.post(`${API_BASE}/upload-csv`, formData);
+      setCsvPath(res.data.file_path);
+      setIsCsvMode(true);
+      setTableName(res.data.filename);
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        type: 'bot',
+        text: `Successfully uploaded ${res.data.filename}. You can now ask questions about this dataset!`
+      }]);
+    } catch (e) {
+      alert("Upload failed.");
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-blue-900 text-white p-4 shadow-md">
-        <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <MessageSquare className="w-6 h-6" />
-            Universal Query Dashboard
-          </h1>
-          <button 
-            onClick={handleExportPng}
-            disabled={isProcessing}
-            className="flex items-center gap-1 px-3 py-1 bg-white text-blue-900 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
-          >
-            <Download className="w-4 h-4" />
-            Export PNG
-          </button>
+    <div className="flex flex-col h-screen overflow-hidden p-6 gap-6">
+      {/* Top Header */}
+      <header className="flex justify-between items-center glass-card p-4 px-8 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-indigo-600 rounded-xl">
+             <LayoutDashboard className="w-6 h-6" />
+          </div>
+          <h1 className="text-xl font-bold tracking-tight">Universal Query Dashboard <span className="text-xs font-mono text-indigo-400 ml-2">AGENTIC v2.0</span></h1>
+        </div>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 cursor-pointer bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg border border-white/10 transition-all text-sm font-medium">
+            <Upload className="w-4 h-4" />
+            Upload CSV
+            <input type="file" className="hidden" accept=".csv" onChange={handleFileUpload} />
+          </label>
         </div>
       </header>
 
-      <div className="container mx-auto p-4 grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Sidebar */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white rounded-lg shadow-md p-4">
-            <h2 className="text-lg font-semibold mb-4">Upload Data</h2>
-            <FileUpload onFileUpload={handleFileUpload} />
-            
-            {currentTable && (
-              <div className="mt-4 p-3 bg-blue-50 rounded-md">
-                <p className="text-sm text-blue-800">
-                  Current table: <span className="font-medium">{currentTable}</span>
-                </p>
-              </div>
-            )}
+      {/* Main Grid */}
+      <div className="flex-1 grid grid-cols-12 gap-6 overflow-hidden">
+        {/* Left Column: Chat & Thought Process */}
+        <div className="col-span-12 lg:col-span-4 flex flex-col gap-6 overflow-hidden">
+          <div className="flex-1 overflow-hidden">
+             <ChatPanel 
+              messages={messages} 
+              inputValue={inputValue} 
+              setInputValue={setInputValue} 
+              onSend={handleSend}
+              isLoading={isLoading}
+            />
           </div>
-
-          {suggestedQueries.length > 0 && (
-            <div className="bg-white rounded-lg shadow-md p-4">
-              <h2 className="text-lg font-semibold mb-4">Try these queries:</h2>
-              <QueryChips 
-                queries={suggestedQueries} 
-                onClick={handleSuggestedQueryClick} 
-              />
-            </div>
-          )}
-
-          {queryHistory.length > 0 && (
-            <div className="bg-white rounded-lg shadow-md p-4 max-h-96 overflow-y-auto">
-              <h2 className="text-lg font-semibold mb-4">Recent Queries</h2>
-              <ul className="space-y-2">
-                {queryHistory.slice(-5).map((item) => (
-                  <li key={item.id} className="text-sm p-2 bg-gray-50 rounded">
-                    <p className="font-medium truncate">{item.question}</p>
-                    <p className="text-xs text-gray-500 mt-1">{item.timestamp}</p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <div className="h-[300px] shrink-0">
+            <ThoughtProcess steps={steps} />
+          </div>
         </div>
 
-        {/* Main Content */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* Error message */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md">
-              {error}
-            </div>
-          )}
-
-          {/* Chat history */}
-          <div className="bg-white rounded-lg shadow-md p-4 max-h-96 overflow-y-auto">
-            {queryHistory.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <p>No queries yet. Upload a CSV file and start asking questions!</p>
-              </div>
+        {/* Right Column: Visualization & Data */}
+        <div className="col-span-12 lg:col-span-8 flex flex-col gap-6 overflow-hidden">
+          {/* Chart Section */}
+          <div className="flex-1 min-h-0">
+            {chartType !== 'none' ? (
+                <Charts data={currentData} type={chartType} />
             ) : (
-              <div className="space-y-6">
-                {queryHistory.map((item) => (
-                  <div key={item.id} className="border-b pb-6 last:border-b-0">
-                    <div className="mb-3">
-                      <p className="font-medium text-gray-800">{item.question}</p>
-                      <p className="text-sm text-gray-500 mt-1">{item.timestamp}</p>
-                    </div>
-                    
-                    {item.data && item.data.length > 0 && (
-                      <div className="chart-container mb-4">
-                        <ChartDisplay 
-                          data={item.data} 
-                          chartType={item.chartType} 
-                          insight={item.insight}
-                        />
-                      </div>
-                    )}
-                    
-                    {item.insight && (
-                      <div className="bg-blue-50 p-3 rounded-md">
-                        <p className="text-sm text-blue-800">{item.insight}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <div ref={chatEndRef} />
+              <div className="glass-card h-full flex items-center justify-center text-gray-500 italic">
+                No visualization to display. Ask a query to see results.
               </div>
             )}
           </div>
 
-          {/* Input form */}
-          <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-4">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Ask a question about your data..."
-                className="flex-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={isProcessing || !currentTable}
-              />
-              <button
-                type="submit"
-                disabled={isProcessing || !currentTable || !inputValue.trim()}
-                className="px-4 py-3 bg-blue-900 text-white rounded-md hover:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                <Send className="w-4 h-4" />
-                {isProcessing ? 'Processing...' : 'Send'}
-              </button>
+          {/* Table Section */}
+          <div className="h-[300px] glass-card p-4 overflow-hidden flex flex-col shrink-0">
+            <div className="flex items-center gap-2 mb-4 text-gray-400">
+               <TableIcon className="w-4 h-4" />
+               <span className="text-xs font-bold uppercase tracking-widest">Result Dataset</span>
+               {currentData.length > 0 && <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full">{currentData.length} rows</span>}
             </div>
-          </form>
+            <div className="flex-1 overflow-auto">
+                {currentData.length > 0 ? (
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="sticky top-0 bg-[#0f172a] z-10">
+                      <tr>
+                        {Object.keys(currentData[0]).map(k => (
+                          <th key={k} className="p-2 border-b border-white/10 font-medium text-gray-400">{k}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {currentData.slice(0, 50).map((row, idx) => (
+                        <tr key={idx} className="hover:bg-white/5">
+                          {Object.values(row).map((v: any, i) => (
+                            <td key={i} className="p-2 font-mono text-gray-300">{v?.toString() || '-'}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-gray-600 italic">
+                     Query the database to see tabular results...
+                  </div>
+                )}
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* Loading overlay */}
-      {isProcessing && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
-            <LoadingSpinner />
-            <p className="mt-2 text-gray-600">Processing your query...</p>
-          </div>
-        </div>
-      )}
     </div>
-  )
-}
-
-// Root component with context provider
-export default function Home() {
-  return (
-    <QueryProvider>
-      <DashboardContent />
-    </QueryProvider>
-  )
+  );
 }

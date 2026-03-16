@@ -1,0 +1,16 @@
+{
+    "business_rules": [
+        "Price is always in USD",
+        "VehicleID is the primary key",
+        "Electric vehicles have EngineSize 0.0",
+        "Mileage is in miles",
+        "Top speed is not recorded but performance models (M series) should be highlighted"
+    ],
+    "table_descriptions": {
+        "vehicles": "Inventory of BMW vehicles including model, year, price, and technical specs"
+    },
+    "metrics": {
+        "average_price": "AVG(Price)",
+        "inventory_count": "COUNT(*)"
+    }
+}

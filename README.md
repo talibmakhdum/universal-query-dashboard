@@ -1,31 +1,40 @@
 # Universal Query Dashboard
 
-A powerful natural language to interactive dashboard system that works with any uploaded CSV dataset. Transform your data into insights with simple English questions.
+[![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Google Gemini](https://img.shields.io/badge/Google%20Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-## Features
+**Talk to your data in plain English.**  
+Upload any CSV → ask natural questions → get instant insights, beautiful charts, and smart answers — powered by Google Gemini.
 
-- **Natural Language Queries**: Ask questions in plain English about your data
-- **Interactive Visualizations**: Automatic chart generation (bar, line, pie, KPI cards)
-- **Conversation Memory**: Follow-up questions with context awareness
-- **Dynamic Suggestions**: Smart query suggestions based on your data schema
-- **Export Functionality**: Export charts as PNG images
-- **Secure Processing**: Read-only database access with SQL injection prevention
+No SQL. No coding. Just curiosity.
 
-## Tech Stack
+## ✨ Key Features
 
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS, Recharts
-- **Backend**: FastAPI, Python, SQLite
-- **AI Integration**: Google Gemini Pro for NL-to-SQL and insights
-- **Visualization**: Recharts for interactive dashboards
+- Natural language questions (“What’s the top product by revenue last quarter?”)
+- Auto-generated interactive charts (bar, line, pie, area, KPI cards)
+- Follow-up questions with full conversation memory
+- Smart query suggestions based on your dataset
+- Export charts (PNG) and data (CSV)
+- Secure local processing — your data stays private
+- Fast, responsive UI built for modern browsers
 
-## Setup Instructions
+## 🛠 Tech Stack
+
+- **Frontend**: Next.js 14 (App Router) · TypeScript · Tailwind CSS · Recharts  
+- **Backend**: FastAPI · Python 3.10+ · SQLite  
+- **AI**: Google Gemini Pro (natural language → SQL + insights)  
+- **Validation**: Zod · Pydantic  
+
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+
-- Python 3.8+
-- Google Gemini API Key
+- Node.js ≥ 18
+- Python ≥ 3.10
+- [Google Gemini API Key](https://ai.google.dev/)
 
-### Frontend Setup
-1. Navigate to the frontend directory: `cd frontend`
-2. Install dependencies: `npm install`
-3. Create `.env.local` with:
+### 1. Clone & Install
+```bash
+git clone https://github.com/talibmakhdum/universal-query-dashboard.git
+cd universal-query-dashboard
