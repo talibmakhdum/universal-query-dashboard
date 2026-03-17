@@ -35,6 +35,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Validate environment
+if not os.getenv("GEMINI_API_KEY") and not os.getenv("GOOGLE_API_KEY"):
+    print("\n❌ ERROR: GEMINI_API_KEY is not set in environment variables.")
+    print("Please create a .env file or set the variable to continue.\n")
+
 db_utils = DBUtils()
 
 class QueryRequest(BaseModel):

@@ -1,29 +1,42 @@
-# Python
+# Python Virtual Environments
 backend/venv/
-backend/__pycache__/
-backend/*.pyc
+.venv/
+env/
+venv/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Databases & Local Data
 *.db
 *.sqlite3
+backend/uploads/*
+!backend/uploads/.gitkeep
 
 # Environment variables (API keys!)
 .env
-.env.local
-.env.production
-backend/.env
+.env.*
+!.env.example
 
-# Node
-frontend/node_modules/
-frontend/.next/
-frontend/out/
+# Node / Next.js
+node_modules/
+.next/
+out/
+build/
+dist/
 
-# IDE
+# IDE & OS
 .vscode/
 .idea/
-
-# OS
+.cursor/
 Thumbs.db
 .DS_Store
 
 # Logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
