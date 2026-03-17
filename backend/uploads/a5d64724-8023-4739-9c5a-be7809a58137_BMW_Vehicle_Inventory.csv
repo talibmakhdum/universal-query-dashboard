@@ -1,0 +1,16 @@
+VehicleID,Make,Model,Year,FuelType,Price,Mileage,Color,Transmission,EngineSize
+1,BMW,3 Series,2022,Gasoline,45000.0,15000,Black,Automatic,2.0
+2,BMW,5 Series,2021,Gasoline,55000.0,20000,White,Automatic,3.0
+3,BMW,X3,2023,Hybrid,52000.0,8000,Blue,Automatic,2.0
+4,BMW,X5,2022,Diesel,65000.0,12000,Silver,Automatic,3.0
+5,BMW,M3,2023,Gasoline,85000.0,5000,Red,Manual,3.0
+6,BMW,X1,2021,Gasoline,40000.0,25000,Gray,Automatic,2.0
+7,BMW,Z4,2022,Gasoline,50000.0,10000,Yellow,Automatic,2.0
+8,BMW,iX,2023,Electric,75000.0,3000,White,Automatic,0.0
+9,BMW,7 Series,2022,Gasoline,80000.0,18000,Black,Automatic,4.4
+10,BMW,X6,2023,Hybrid,70000.0,7000,Blue,Automatic,3.0
+11,BMW,2 Series,2021,Gasoline,38000.0,30000,Green,Manual,2.0
+12,BMW,4 Series,2022,Gasoline,48000.0,12000,Purple,Automatic,2.0
+13,BMW,i3,2020,Electric,42000.0,22000,White,Automatic,0.0
+14,BMW,X2,2023,Gasoline,43000.0,6000,Orange,Automatic,2.0
+15,BMW,8 Series,2022,Gasoline,90000.0,9000,Brown,Automatic,4.4

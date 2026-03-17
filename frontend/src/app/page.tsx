@@ -155,7 +155,12 @@ export default function Dashboard() {
     }
   };
 
-  const clearChat = () => {
+  const clearChat = async () => {
+    try {
+      await axios.post(`${API_BASE}/clear-session?session_id=demo-session`);
+    } catch (e) {
+      console.error("Failed to clear backend session", e);
+    }
     setMessages([]);
     setCurrentData([]);
     setChartType('none');
