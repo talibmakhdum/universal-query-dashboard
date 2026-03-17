@@ -1,5 +1,8 @@
 import time
 import sqlite3
+import re
+import random
+import threading
 from typing import Optional
 from agents.state import AgentState
 from utils.db import DBUtils
@@ -106,10 +109,10 @@ class Executor:
 
     def _execute_with_timeout(self, sql: str):
         """Execute SQL query with timeout protection."""
-        import threading
+        from typing import List, Any
         
-        result = [None]
-        error = [None]
+        result: List[Any] = [None]
+        error: List[Any] = [None]
         
         def execute_query():
             try:
@@ -129,19 +132,17 @@ class Executor:
             # Query is still running - this is a timeout
             raise TimeoutError(f"Query execution exceeded {self.timeout_seconds} seconds")
         
-        if error[0]:
+        if error[0] is not None:
             raise error[0]
         
         return result[0]
 
     def _calculate_delay(self, attempt: int) -> float:
         """Calculate delay for exponential backoff with jitter."""
-        import random
-        
         delay = min(self.base_delay * (2 ** attempt), self.max_delay)
         # Add jitter (random variation between 0 and delay * 0.1)
         jitter = random.uniform(0, delay * 0.1)
-        return delay + jitter
+        return float(delay + jitter)
 
     def set_retry_config(self, max_retries: int, timeout_seconds: int):
         """Update retry configuration."""

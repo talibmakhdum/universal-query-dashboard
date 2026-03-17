@@ -137,7 +137,8 @@ async def upload_csv(file: UploadFile = File(...)):
         
         # Save file
         with open(file_path, "wb") as buffer:
-            buffer.write(content)
+            # content is bytes from await file.read()
+            buffer.write(content) # type: ignore
             
         return {
             "success": True,
@@ -184,8 +185,8 @@ async def query(request: QueryRequest):
             result = await run_db_query(request.question, request.table_name, request.session_id)
         
         # Add performance metrics
-        execution_time = time.time() - start_time
-        result["execution_time_ms"] = round(execution_time * 1000, 2)
+        execution_time: float = time.time() - start_time
+        result["execution_time_ms"] = float(f"{execution_time * 1000:.2f}")
         result["timestamp"] = time.strftime("%Y-%m-%d %H:%M:%S")
         
         # Log performance metric
