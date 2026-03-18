@@ -72,7 +72,7 @@ python -m venv venv
 # Linux/Mac
 source venv/bin/activate
 
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 Create a `.env` file in the `backend/` directory:
 ```env
