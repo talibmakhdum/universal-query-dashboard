@@ -24,6 +24,8 @@ export default function Dashboard() {
   const [csvPath, setCsvPath] = useState('');
   const [sessionStats, setSessionStats] = useState({ queries: 0, avgTime: 0, successRate: 100 });
 
+  const [activeTab, setActiveTab] = useState<'reasoning' | 'visualization' | 'dataset'>('dataset');
+
   // Fetch initial tables
   useEffect(() => {
     const fetchTables = async () => {
@@ -50,6 +52,7 @@ export default function Dashboard() {
     setInputValue('');
     setIsLoading(true);
     setSteps([]);
+    setActiveTab('reasoning'); // Auto-switch to reasoning when thinking
 
     try {
       const payload = {
@@ -81,6 +84,13 @@ export default function Dashboard() {
         setSteps(res.data.thought_process || []);
         setCurrentData(res.data.data || []);
         setChartType(res.data.chartType || 'bar');
+        
+        // Auto-switch to visualization if available, else dataset
+        if (res.data.chartType && res.data.chartType !== 'none') {
+          setActiveTab('visualization');
+        } else {
+          setActiveTab('dataset');
+        }
         
         // Update session stats
         setSessionStats(prev => ({
@@ -181,66 +191,74 @@ export default function Dashboard() {
   const systemStatus = getSystemStatus();
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden p-6 gap-6 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="flex flex-col h-screen overflow-hidden p-4 gap-4 bg-slate-950 text-white selection:bg-purple-500/30 relative">
+      {/* Dynamic Background Orbs (from landing page) */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-600/10 blur-[120px] rounded-full animate-pulse"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full animate-pulse delay-700"></div>
+      </div>
+
       {/* Top Header */}
-      <header className="flex justify-between items-center glass-card p-4 px-8 shrink-0 border border-white/20">
+      <header className="relative z-10 flex justify-between items-center glass-card p-4 px-6 shrink-0 border border-white/10 shadow-lg">
         <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-lg">
-             <LayoutDashboard className="w-6 h-6 text-white" />
+          <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-[0_0_15px_rgba(99,102,241,0.3)]">
+             <LayoutDashboard className="w-5 h-5 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-3">
               <Link href="/" className="text-gray-500 hover:text-white transition-colors cursor-pointer">
                 <LayoutDashboard className="w-4 h-4" />
               </Link>
-              <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Universal Query Dashboard
+              <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-white to-gray-500 bg-clip-text text-transparent">
+                Universal Query
               </h1>
             </div>
-            <p className="text-xs text-gray-400 font-mono">Agentic Analytics System v2.0</p>
+            <p className="text-xs text-gray-400 font-medium tracking-wide">Agentic Analytics</p>
           </div>
         </div>
         
         <div className="flex items-center gap-4">
           {/* System Status */}
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2 text-sm bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
             <div className={`w-2 h-2 rounded-full ${systemStatus.color.replace('text-', 'bg-')} animate-pulse`}></div>
-            <span className={`text-sm font-medium ${systemStatus.color}`}>{systemStatus.status}</span>
-          </div>
-          
-          {/* Session Stats */}
-          <div className="flex items-center gap-3 text-xs text-gray-400">
-            <span className="bg-white/10 px-2 py-1 rounded">Queries: {sessionStats.queries}</span>
-            <span className="bg-white/10 px-2 py-1 rounded">Avg: {sessionStats.avgTime}ms</span>
-            <span className="bg-white/10 px-2 py-1 rounded">Success: {sessionStats.successRate}%</span>
+            <span className={`text-xs font-semibold uppercase tracking-wider ${systemStatus.color}`}>{systemStatus.status}</span>
           </div>
           
           {/* Actions */}
           <div className="flex items-center gap-2">
             <button
               onClick={clearChat}
-              className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-3 py-2 rounded-lg border border-white/10 transition-all text-sm font-medium"
+              className="flex items-center gap-2 hover:text-white px-3 py-2 rounded-lg text-gray-400 transition-all text-sm font-semibold"
             >
               <RefreshCw className="w-4 h-4" />
-              Clear
+              Reset
             </button>
-            <label className="flex items-center gap-2 cursor-pointer bg-gradient-to-br from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 px-4 py-2 rounded-lg transition-all text-sm font-medium shadow-lg">
+            <label className="flex items-center gap-2 cursor-pointer bg-gradient-to-br from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 px-4 py-2 rounded-lg transition-all text-sm font-bold shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:scale-105 active:scale-95">
               <Upload className="w-4 h-4" />
               Upload CSV
               <input type="file" className="hidden" accept=".csv" onChange={handleFileUpload} />
             </label>
-            <Link href="/" className="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-sm font-semibold border border-white/10 transition-all">
+            <Link href="/" className="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-sm font-semibold border border-white/10 transition-all ml-2">
               Sign Out
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Main Grid */}
-      <div className="flex-1 grid grid-cols-12 gap-6 overflow-hidden">
-        {/* Left Column: Chat & Thought Process */}
-        <div className="col-span-12 lg:col-span-4 flex flex-col gap-6 overflow-hidden">
-          <div className="flex-1 overflow-hidden">
+      {/* Main Grid: 2 Column Elegant Layout */}
+      <div className="relative z-10 flex-1 flex gap-4 overflow-hidden">
+        {/* Left Column: Primary Chat UI */}
+        <div className="w-[55%] flex flex-col overflow-hidden glass-card border-white/10 shadow-2xl">
+          <div className="bg-white/5 border-b border-white/10 p-4 shrink-0 flex items-center justify-between">
+            <h2 className="text-sm font-bold tracking-widest uppercase text-gray-300 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              Agentic Chat
+            </h2>
+            <div className="text-[10px] text-gray-500 font-mono bg-black/20 px-2 py-1 rounded">
+              {tableName.toUpperCase()} DATASOURCE
+            </div>
+          </div>
+          <div className="flex-1 overflow-hidden p-2">
              <ChatPanel 
               messages={messages} 
               inputValue={inputValue} 
@@ -249,95 +267,120 @@ export default function Dashboard() {
               isLoading={isLoading}
             />
           </div>
-          <div className="h-[320px] shrink-0">
-            <ThoughtProcess steps={steps} isLoading={isLoading} />
-          </div>
         </div>
 
-        {/* Right Column: Visualization & Data */}
-        <div className="col-span-12 lg:col-span-8 flex flex-col gap-6 overflow-hidden">
-          {/* Chart Section */}
-          <div className="flex-1 min-h-0">
-            {chartType !== 'none' ? (
-              <div className="glass-card p-4 h-full">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Data Visualization</h3>
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <span className="bg-white/10 px-2 py-1 rounded">Chart Type: {chartType}</span>
-                    {currentData.length > 0 && <span className="bg-white/10 px-2 py-1 rounded">Rows: {currentData.length}</span>}
+        {/* Right Column: Tabbed Data/Reasoning Interface */}
+        <div className="w-[45%] flex flex-col overflow-hidden glass-card border-white/10 shadow-2xl">
+          {/* Tab Navigation */}
+          <div className="flex p-2 gap-2 bg-white/5 border-b border-white/10 shrink-0">
+            <button 
+              onClick={() => setActiveTab('reasoning')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${activeTab === 'reasoning' ? 'bg-purple-500/20 text-purple-300 shadow-[inset_0_0_10px_rgba(168,85,247,0.2)] border border-purple-500/30' : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'}`}
+            >
+              <Zap className="w-4 h-4" /> Reasoning
+            </button>
+            <button 
+              onClick={() => setActiveTab('visualization')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${activeTab === 'visualization' ? 'bg-blue-500/20 text-blue-300 shadow-[inset_0_0_10px_rgba(59,130,246,0.2)] border border-blue-500/30' : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'}`}
+            >
+              <AlertTriangle className="w-4 h-4" /> Chart
+            </button>
+             <button 
+              onClick={() => setActiveTab('dataset')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${activeTab === 'dataset' ? 'bg-indigo-500/20 text-indigo-300 shadow-[inset_0_0_10px_rgba(99,102,241,0.2)] border border-indigo-500/30' : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'}`}
+            >
+              <TableIcon className="w-4 h-4" /> Data
+            </button>
+          </div>
+
+          {/* Tab Content Area */}
+          <div className="flex-1 overflow-hidden p-4 relative">
+            
+            {/* Reasoning Tab */}
+            {activeTab === 'reasoning' && (
+              <div className="h-full w-full animate-fade-in">
+                {steps.length > 0 || isLoading ? (
+                  <ThoughtProcess steps={steps} isLoading={isLoading} />
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-gray-500 italic space-y-4">
+                    <div className="p-4 bg-white/5 rounded-full"><Zap className="w-8 h-8 text-purple-400 opacity-50" /></div>
+                    <p className="text-sm">Agent reasoning will appear here securely.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Visualization Tab */}
+            {activeTab === 'visualization' && (
+              <div className="h-full w-full animate-fade-in flex flex-col">
+                <div className="flex justify-between items-center mb-4 shrink-0">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Dynamic Visualization</h3>
+                  <div className="flex gap-2">
+                    <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-1 rounded border border-blue-500/30 uppercase font-black">{chartType}</span>
                   </div>
                 </div>
-                <Charts data={currentData} type={chartType} />
-              </div>
-            ) : (
-              <div className="glass-card h-full flex flex-col items-center justify-center text-gray-500 italic space-y-4">
-                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center">
-                  <Database className="w-8 h-8" />
-                </div>
-                <div className="text-center">
-                  <p className="text-lg font-medium">Ready to analyze your data</p>
-                  <p className="text-sm">Upload a CSV or ask a question about your database</p>
-                </div>
-                <div className="flex gap-2 text-xs text-gray-400">
-                  <span className="bg-white/10 px-2 py-1 rounded">Natural Language Queries</span>
-                  <span className="bg-white/10 px-2 py-1 rounded">Auto Chart Generation</span>
-                  <span className="bg-white/10 px-2 py-1 rounded">Agent Reasoning</span>
+                <div className="flex-1 min-h-0 bg-white/5 rounded-xl border border-white/5 p-4 relative">
+                  {chartType !== 'none' ? (
+                     <Charts data={currentData} type={chartType} />
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 italic space-y-4">
+                      <div className="p-4 bg-white/5 rounded-full"><AlertTriangle className="w-8 h-8 opacity-50" /></div>
+                      <p className="text-sm">Ask a question to generate a dynamic chart.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
-          </div>
 
-          {/* Table Section */}
-          <div className="h-[320px] glass-card p-4 overflow-hidden flex flex-col shrink-0 border border-white/20">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-gray-400">
-                 <TableIcon className="w-4 h-4" />
-                 <span className="text-xs font-bold uppercase tracking-widest">Result Dataset</span>
-                 {currentData.length > 0 && <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/30">Live Data</span>}
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <span className="bg-white/10 px-2 py-1 rounded">Columns: {currentData.length > 0 ? Object.keys(currentData[0]).length : 0}</span>
-                <span className="bg-white/10 px-2 py-1 rounded">Rows: {currentData.length}</span>
-              </div>
-            </div>
-            <div className="flex-1 overflow-auto">
-                {currentData.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead className="sticky top-0 bg-gradient-to-br from-slate-800 to-slate-900 z-10 border-b border-white/20">
-                        <tr>
-                          {Object.keys(currentData[0]).map(k => (
-                            <th key={k} className="p-3 text-xs font-semibold text-gray-300 uppercase tracking-wider border-r border-white/10 last:border-r-0">
-                              {k}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-white/10">
-                        {currentData.slice(0, 100).map((row, idx) => (
-                          <tr key={idx} className="hover:bg-white/5 transition-colors">
-                            {Object.values(row).map((v: any, i) => (
-                              <td key={i} className="p-3 font-mono text-gray-300 border-r border-white/5 last:border-r-0">
-                                {typeof v === 'number' ? v.toLocaleString() : v?.toString() || '-'}
-                              </td>
+            {/* Dataset Tab */}
+            {activeTab === 'dataset' && (
+              <div className="h-full w-full animate-fade-in flex flex-col">
+                <div className="flex items-center justify-between mb-4 shrink-0">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Result Memory</h3>
+                   <div className="flex gap-2 text-[10px] text-gray-500 font-mono">
+                    <span className="bg-black/20 px-2 py-1 rounded border border-white/5">Cols: {currentData.length > 0 ? Object.keys(currentData[0]).length : 0}</span>
+                    <span className="bg-black/20 px-2 py-1 rounded border border-white/5">Rows: {currentData.length}</span>
+                  </div>
+                </div>
+                <div className="flex-1 min-h-0 bg-black/20 rounded-xl border border-white/5 overflow-hidden">
+                  {currentData.length > 0 ? (
+                    <div className="h-full overflow-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead className="sticky top-0 bg-slate-900 z-10 border-b border-white/10 shadow-md">
+                          <tr>
+                            {Object.keys(currentData[0]).map(k => (
+                              <th key={k} className="p-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-r border-white/5 last:border-r-0 whitespace-nowrap">
+                                {k}
+                              </th>
                             ))}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-gray-600 italic">
-                     <div className="text-center space-y-2">
-                       <Database className="w-8 h-8 mx-auto text-gray-500" />
-                       <p>No data to display</p>
-                       <p className="text-xs text-gray-400">Execute a query to populate this table</p>
-                     </div>
-                  </div>
-                )}
-            </div>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {currentData.slice(0, 100).map((row, idx) => (
+                            <tr key={idx} className="hover:bg-white/5 transition-colors group">
+                              {Object.values(row).map((v: any, i) => (
+                                <td key={i} className="p-3 font-mono text-gray-300 border-r border-white/5 last:border-r-0 whitespace-nowrap text-[11px] group-hover:text-white transition-colors">
+                                  {typeof v === 'number' ? v.toLocaleString() : v?.toString() || '-'}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-gray-500 italic space-y-4">
+                       <div className="p-4 bg-white/5 rounded-full"><TableIcon className="w-8 h-8 opacity-50" /></div>
+                       <p className="text-sm">Extracted data will be structured here.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
+
       </div>
     </div>
   );
