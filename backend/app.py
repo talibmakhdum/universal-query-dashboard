@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from fastapi import FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -20,6 +24,10 @@ from utils.monitoring import (
     start_monitoring, stop_monitoring, record_query_start, record_query_end, 
     get_health_status, get_performance_stats
 )
+from utils.auth import init_auth_db, create_user, authenticate_user
+
+# Initialize the authentication database on startup
+init_auth_db()
 
 app = FastAPI(
     title="Universal Query Dashboard",
@@ -54,6 +62,15 @@ class HealthResponse(BaseModel):
     timestamp: str
     version: str
     uptime: str
+
+class SignupRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
@@ -113,6 +130,24 @@ async def get_system_info():
             }
         }
     }
+
+@app.post("/auth/signup")
+async def register(req: SignupRequest):
+    """Register a new user account."""
+    result = create_user(req.name, req.email, req.password)
+    if result.get("success"):
+        return result
+    else:
+        raise HTTPException(status_code=400, detail=result.get("error"))
+
+@app.post("/auth/login")
+async def auth_login(req: LoginRequest):
+    """Log a user into their account."""
+    result = authenticate_user(req.email, req.password)
+    if result.get("success"):
+        return result
+    else:
+        raise HTTPException(status_code=401, detail=result.get("error"))
 
 @app.post("/upload-csv")
 async def upload_csv(file: UploadFile = File(...)):
@@ -185,7 +220,7 @@ async def query(request: QueryRequest):
                     field="csv_path",
                     value=request.csv_path
                 )
-            result = await run_csv_query(request.csv_path, request.question)
+            result = await run_csv_query(request.csv_path, request.question, request.session_id)
         else:
             result = await run_db_query(request.question, request.table_name, request.session_id)
         
