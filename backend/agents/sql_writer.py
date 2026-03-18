@@ -9,7 +9,7 @@ load_dotenv()
 
 class SQLWriter:
     def __init__(self):
-        self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp")
+        self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
         meta_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'metadata', 'metadata.json')
         with open(meta_path, 'r') as f:
             self.metadata = json.load(f)

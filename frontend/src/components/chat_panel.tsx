@@ -65,6 +65,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ messages, inputValue, setI
     return `${(ms / 1000).toFixed(2)}s`;
   };
 
+  const formatText = (text: string) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} className="font-bold text-white tracking-wide">{part.slice(2, -2)}</strong>;
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
   return (
     <div className="flex flex-col h-full glass-card overflow-hidden">
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -80,7 +90,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ messages, inputValue, setI
                 ? 'bg-gradient-to-br from-indigo-600 to-blue-600 text-white rounded-tr-none shadow-lg' 
                 : 'bg-white/10 text-gray-100 rounded-tl-none border border-white/10 backdrop-blur-sm'
             }`}>
-              <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.text}</p>
+              <div className="text-sm whitespace-pre-wrap leading-relaxed font-medium text-gray-200">{formatText(msg.text)}</div>
               
               {msg.sql && (
                 <div className={`mt-3 ${getSqlBgColor(msg.sqlType)} rounded-lg p-2 border ${getSqlBorderColor(msg.sqlType)} transition-all`}>

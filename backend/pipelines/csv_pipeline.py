@@ -13,7 +13,7 @@ api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 if api_key:
     genai.configure(api_key=api_key)
 
-llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp")
+llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
 logger = logging.getLogger(__name__)
 
 # Global dict to store context caches
@@ -50,7 +50,7 @@ async def run_csv_query(file_path: str, question: str, session_id: str = "defaul
                     return v[:100] + "..."
                 return v
             
-            sample = df.head(1).applymap(truncate_value).to_dict(orient="records")
+            sample = df.head(1).map(truncate_value).to_dict(orient="records")
             dtype_summary = df.dtypes.apply(lambda x: x.name).to_dict()
             
             schema_str = ", ".join([f"{col}({dtype_summary[col]})" for col in columns])
@@ -72,7 +72,7 @@ You are a senior data scientist. Pandas DataFrame 'df':
                     # If this tiny schema doesn't fit the min req, it will naturally throw an exception
                     # which we catch, defaulting to standard prefix string insertion.
                     cached_content = genai.caching.CachedContent.create(
-                        model='models/gemini-2.0-flash-exp',
+                        model='models/gemini-2.0-flash',
                         display_name=f"csv_cache_{os.path.basename(file_path)}",
                         system_instruction="Return strictly Python code. No markdown. No explanations.",
                         contents=[schema_prompt_part],
@@ -102,6 +102,7 @@ Write a Python snippet to answer this.
 2. Store the primary result in a variable called 'result' as a list of dictionaries.
 3. Store a brief insight about the findings in a variable called 'insight' (string).
 4. Recommend a chart type ('bar', 'line', 'pie', 'kpi', or 'none') in a variable 'chart_type'.
+5. Do NOT use the deprecated DataFrame.applymap() or DataFrame.apply() methods. Use DataFrame.map() instead if needed.
 
 Return ONLY valid Python code. No ```python blocks.
 """

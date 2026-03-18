@@ -9,7 +9,7 @@ load_dotenv()
 
 class PlannerAgent:
     def __init__(self):
-        self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp")
+        self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
         
         # Load metadata
         meta_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'metadata', 'metadata.json')
