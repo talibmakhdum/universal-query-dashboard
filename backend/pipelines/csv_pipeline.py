@@ -5,7 +5,7 @@ import os
 import json
 import traceback
 
-llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp")
 
 async def run_csv_query(file_path: str, question: str):
     """
