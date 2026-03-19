@@ -185,7 +185,4 @@ class SQLCritic:
         if re.search(r',\s*,', sql):  # Double commas
             issues.append("Double commas detected.")
         
-        if re.search(r'\s{2,}', sql):  # Multiple spaces (could indicate issues)
-            issues.append("Multiple consecutive spaces detected.")
-        
         return issues

@@ -37,7 +37,7 @@ def safe_llm_invoke(llm: ChatGoogleGenerativeAI, messages: Any, **kwargs) -> Any
     """
     Robust retry with Key Rotation and Model Fallback on Quota errors.
     """
-    models_to_try = [llm.model, "gemini-1.5-flash"]
+    models_to_try = [llm.model, "gemini-2.5-flash"]
     total_keys = max(1, len(API_KEYS))
     
     for current_model in models_to_try:

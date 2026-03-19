@@ -1,7 +1,6 @@
 from utils.api_handler import get_llm, safe_llm_invoke
 import json
 import os
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from agents.state import AgentState
 from dotenv import load_dotenv
