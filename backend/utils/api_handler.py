@@ -6,17 +6,19 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 logger = logging.getLogger(__name__)
 
-API_KEYS = [
-    "AIzaSyDMGJcUfqx2AE2Xz3TreUXHK4BEPjdmJOE",
-    "AIzaSyATSOxomwFGVLWd4SjxuISOGYLCeBsIKDE",
-    "AIzaSyDl0p2AcwCOa57kCGyn_QmE-KD05RQg_Y8",
-    "AIzaSyBQfBLAPkroU5WxBs-lNeGbWeqWZcWkcfI"
-]
+# Load multiple keys from an environment variable (comma-separated) or fallback to single key
+raw_keys = os.getenv("HACKATHON_API_KEYS", "")
+API_KEYS = [k.strip() for k in raw_keys.split(",") if k.strip()]
 
-# Add env key if valid
-env_key = os.getenv("GEMINI_API_KEY")
+# Add standard env key if valid
+env_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 if env_key and env_key not in API_KEYS:
     API_KEYS.insert(0, env_key)
+
+# If no keys provided at all, we shouldn't fail instantly but warn
+if not API_KEYS:
+    logger.warning("No API Keys found! Please set GEMINI_API_KEY or HACKATHON_API_KEYS in your .env file.")
+    API_KEYS = ["MISSING_API_KEY"] # Placeholder to prevent index errors before failure
 
 _current_key_idx = 0
 
