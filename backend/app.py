@@ -26,14 +26,23 @@ from utils.monitoring import (
 )
 from utils.auth import init_auth_db, create_user, authenticate_user
 
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
 # Initialize the authentication database on startup
 init_auth_db()
+
+limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title="Universal Query Dashboard",
     description="Agentic Analytics System with Natural Language Query Processing",
     version="2.0.0"
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -150,7 +159,8 @@ async def auth_login(req: LoginRequest):
         raise HTTPException(status_code=401, detail=result.get("error"))
 
 @app.post("/upload-csv")
-async def upload_csv(file: UploadFile = File(...)):
+@limiter.limit("5/minute")
+async def upload_csv(request: Request, file: UploadFile = File(...)):
     """Upload CSV file for analysis."""
     try:
         # Validate file type
@@ -192,37 +202,38 @@ async def upload_csv(file: UploadFile = File(...)):
         return handle_database_error(f"Failed to upload CSV file: {str(e)}")
 
 @app.post("/query")
-async def query(request: QueryRequest):
+@limiter.limit("15/minute")
+async def query(request: Request, payload: QueryRequest):
     """Process natural language query and return results."""
     start_time = time.time()
     
     try:
         # Validate request
-        if not request.question or not request.question.strip():
+        if not payload.question or not payload.question.strip():
             return handle_validation_error(
                 "Query question cannot be empty",
                 field="question",
-                value=request.question
+                value=payload.question
             )
         
-        if not request.is_csv and not request.table_name:
+        if not payload.is_csv and not payload.table_name:
             return handle_validation_error(
                 "Table name is required for database queries",
                 field="table_name",
-                value=request.table_name
+                value=payload.table_name
             )
         
         # Process query
-        if request.is_csv:
-            if not request.csv_path:
+        if payload.is_csv:
+            if not payload.csv_path:
                 return handle_validation_error(
                     "CSV path is required for CSV queries",
                     field="csv_path",
-                    value=request.csv_path
+                    value=payload.csv_path
                 )
-            result = await run_csv_query(request.csv_path, request.question, request.session_id)
+            result = await run_csv_query(payload.csv_path, payload.question, payload.session_id)
         else:
-            result = await run_db_query(request.question, request.table_name, request.session_id)
+            result = await run_db_query(payload.question, payload.table_name, payload.session_id)
         
         # Add performance metrics
         execution_time: float = time.time() - start_time
@@ -235,10 +246,10 @@ async def query(request: QueryRequest):
             duration=execution_time,
             success=result.get("success", False),
             details={
-                "question_length": len(request.question),
-                "is_csv": request.is_csv,
-                "table_name": request.table_name,
-                "session_id": request.session_id
+                "question_length": len(payload.question),
+                "is_csv": payload.is_csv,
+                "table_name": payload.table_name,
+                "session_id": payload.session_id
             }
         )
         
@@ -254,9 +265,9 @@ async def query(request: QueryRequest):
             success=False,
             details={
                 "error": str(e),
-                "question_length": len(request.question) if request.question else 0,
-                "is_csv": request.is_csv,
-                "table_name": request.table_name
+                "question_length": len(payload.question) if payload.question else 0,
+                "is_csv": payload.is_csv,
+                "table_name": payload.table_name
             }
         )
         

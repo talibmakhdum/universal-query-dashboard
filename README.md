@@ -89,7 +89,7 @@ npm install --legacy-peer-deps
 **Window 1 (Backend):**
 ```bash
 cd backend
-python app.py
+python app.pynpm 
 ```
 
 **Window 2 (Frontend):**

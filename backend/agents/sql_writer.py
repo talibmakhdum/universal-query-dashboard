@@ -1,3 +1,4 @@
+from utils.api_handler import get_llm, safe_llm_invoke
 import os
 import json
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -9,7 +10,7 @@ load_dotenv()
 
 class SQLWriter:
     def __init__(self):
-        self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+        # using api_handler get_llm now
         meta_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'metadata', 'metadata.json')
         with open(meta_path, 'r') as f:
             self.metadata = json.load(f)
@@ -63,7 +64,7 @@ class SQLWriter:
         Generate the optimized SQL query:
         """
         
-        response = self.llm.invoke([
+        response = safe_llm_invoke(get_llm(), [
             SystemMessage(content="You are a senior database architect generating production-ready SQL queries."),
             HumanMessage(content=prompt)
         ])

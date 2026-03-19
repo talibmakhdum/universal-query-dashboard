@@ -1,3 +1,4 @@
+from utils.api_handler import get_llm, safe_llm_invoke
 import json
 import os
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -9,7 +10,7 @@ load_dotenv()
 
 class PlannerAgent:
     def __init__(self):
-        self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+        # using api_handler get_llm now
         
         # Load metadata
         meta_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'metadata', 'metadata.json')
@@ -33,7 +34,7 @@ class PlannerAgent:
         Respond only with the plan string.
         """
         
-        response = self.llm.invoke([
+        response = safe_llm_invoke(get_llm(), [
             SystemMessage(content="You are a senior data architect planning a query."),
             HumanMessage(content=prompt)
         ])

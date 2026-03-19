@@ -7,7 +7,7 @@ import time
 import threading
 import psutil
 import sqlite3
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, DefaultDict
 from datetime import datetime, timedelta
 from dataclasses import dataclass, asdict
 from collections import defaultdict, deque
@@ -53,10 +53,11 @@ class MetricsCollector:
         self._init_database()
         
         # Performance tracking
-        self._active_queries = {}
-        self._query_count_1min = deque(maxlen=60)  # 1 minute window
-        self._monitoring_active = False
-        self._monitor_thread = None
+        # Performance tracking
+        self._active_queries: Dict[str, Dict[str, Any]] = {}
+        self._query_count_1min: deque = deque(maxlen=60)  # 1 minute window
+        self._monitoring_active: bool = False
+        self._monitor_thread: Optional[threading.Thread] = None
         
     def _init_database(self):
         """Initialize the metrics database."""
@@ -104,14 +105,16 @@ class MetricsCollector:
             return
             
         self._monitoring_active = True
-        self._monitor_thread = threading.Thread(target=self._monitor_loop, args=(interval,), daemon=True)
-        self._monitor_thread.start()
+        thread = threading.Thread(target=self._monitor_loop, args=(interval,), daemon=True)
+        self._monitor_thread = thread
+        thread.start()
     
     def stop_monitoring(self):
         """Stop background monitoring."""
         self._monitoring_active = False
-        if self._monitor_thread:
-            self._monitor_thread.join(timeout=5)
+        thread = self._monitor_thread
+        if thread:
+            thread.join(timeout=5)
     
     def _monitor_loop(self, interval: int):
         """Background monitoring loop."""
@@ -180,16 +183,16 @@ class MetricsCollector:
             return
             
         query_data = self._active_queries.pop(query_id)
-        execution_time = (time.time() - query_data['start_time']) * 1000
+        execution_time = (time.time() - float(query_data['start_time'])) * 1000
         memory_usage = psutil.Process().memory_info().rss / (1024 * 1024)
         cpu_usage = psutil.Process().cpu_percent()
         
         metrics = QueryMetrics(
             query_id=query_id,
-            session_id=query_data['session_id'],
-            question=query_data['question'],
-            table_name=query_data['table_name'],
-            is_csv=query_data['is_csv'],
+            session_id=str(query_data['session_id']),
+            question=str(query_data['question']),
+            table_name=str(query_data['table_name']),
+            is_csv=bool(query_data['is_csv']),
             agent_steps=agent_steps,
             execution_time_ms=execution_time,
             result_count=result_count,
@@ -270,15 +273,17 @@ class MetricsCollector:
         avg_result_count = sum(q.result_count for q in successful_queries) / len(successful_queries) if successful_queries else 0
         
         # Error breakdown
-        error_breakdown = defaultdict(int)
+        error_breakdown: Dict[str, int] = {}
         for q in failed_queries:
             error_type = q.error_type or "Unknown"
-            error_breakdown[error_type] += 1
+            error_breakdown[error_type] = error_breakdown.get(error_type, 0) + 1
         
         # Performance by table
-        performance_by_table = defaultdict(list)
+        performance_by_table: Dict[str, List[float]] = {}
         for q in successful_queries:
             table = q.table_name or "CSV"
+            if table not in performance_by_table:
+                performance_by_table[table] = []
             performance_by_table[table].append(q.execution_time_ms)
         
         table_stats = {}
@@ -292,11 +297,11 @@ class MetricsCollector:
         
         return {
             "total_queries": total_queries,
-            "success_rate": round(success_rate, 2),
-            "avg_execution_time": round(avg_execution_time, 2),
-            "avg_agent_steps": round(avg_agent_steps, 2),
-            "avg_result_count": round(avg_result_count, 2),
-            "error_breakdown": dict(error_breakdown),
+            "success_rate": float(f"{success_rate:.2f}"),
+            "avg_execution_time": float(f"{avg_execution_time:.2f}"),
+            "avg_agent_steps": float(f"{avg_agent_steps:.2f}"),
+            "avg_result_count": float(f"{avg_result_count:.2f}"),
+            "error_breakdown": error_breakdown,
             "performance_by_table": table_stats
         }
     
@@ -325,18 +330,18 @@ class MetricsCollector:
         current = self._collect_system_metrics()
         
         return {
-            "avg_cpu": round(avg_cpu, 2),
-            "avg_memory": round(avg_memory, 2),
-            "avg_disk": round(avg_disk, 2),
+            "avg_cpu": float(f"{avg_cpu:.2f}"),
+            "avg_memory": float(f"{avg_memory:.2f}"),
+            "avg_disk": float(f"{avg_disk:.2f}"),
             "max_active_connections": max_connections,
-            "avg_queries_per_minute": round(avg_qpm, 2),
+            "avg_queries_per_minute": float(f"{avg_qpm:.2f}"),
             "current_load": {
-                "cpu": round(current.cpu_percent, 2),
-                "memory": round(current.memory_percent, 2),
-                "memory_used_mb": round(current.memory_used_mb, 2),
-                "disk": round(current.disk_usage_percent, 2),
+                "cpu": float(f"{current.cpu_percent:.2f}"),
+                "memory": float(f"{current.memory_percent:.2f}"),
+                "memory_used_mb": float(f"{current.memory_used_mb:.2f}"),
+                "disk": float(f"{current.disk_usage_percent:.2f}"),
                 "active_connections": current.active_connections,
-                "queries_per_minute": current.queries_per_minute
+                "queries_per_minute": float(current.queries_per_minute)
             }
         }
     
@@ -354,16 +359,18 @@ class MetricsCollector:
             }
         
         # Steps distribution
-        steps_counts = defaultdict(int)
+        steps_counts: Dict[int, int] = {}
         for q in recent_queries:
-            steps_counts[q.agent_steps] += 1
+            steps_counts[q.agent_steps] = steps_counts.get(q.agent_steps, 0) + 1
         
         avg_steps = sum(q.agent_steps for q in recent_queries) / len(recent_queries)
         
         # Performance by steps
-        performance_by_steps = defaultdict(list)
+        performance_by_steps: Dict[int, List[float]] = {}
         for q in recent_queries:
             if q.success:
+                if q.agent_steps not in performance_by_steps:
+                    performance_by_steps[q.agent_steps] = []
                 performance_by_steps[q.agent_steps].append(q.execution_time_ms)
         
         steps_performance = {}
@@ -375,10 +382,12 @@ class MetricsCollector:
             }
         
         # Efficiency trends (queries per hour by steps)
-        hourly_trends = defaultdict(lambda: defaultdict(int))
+        hourly_trends: Dict[int, Dict[int, int]] = {}
         for q in recent_queries:
             hour = q.timestamp.hour
-            hourly_trends[hour][q.agent_steps] += 1
+            if hour not in hourly_trends:
+                hourly_trends[hour] = {}
+            hourly_trends[hour][q.agent_steps] = hourly_trends[hour].get(q.agent_steps, 0) + 1
         
         efficiency_trends = []
         for hour in sorted(hourly_trends.keys()):
@@ -387,13 +396,13 @@ class MetricsCollector:
             efficiency_trends.append({
                 "hour": hour,
                 "total_queries": total_hourly,
-                "avg_steps": round(avg_steps_hourly, 2),
-                "step_breakdown": dict(hourly_trends[hour])
+                "avg_steps": float(f"{avg_steps_hourly:.2f}"),
+                "step_breakdown": hourly_trends[hour]
             })
         
         return {
-            "avg_steps_per_query": round(avg_steps, 2),
-            "steps_distribution": dict(steps_counts),
+            "avg_steps_per_query": float(f"{avg_steps:.2f}"),
+            "steps_distribution": steps_counts,
             "performance_by_steps": steps_performance,
             "efficiency_trends": efficiency_trends
         }

@@ -14,6 +14,7 @@ if api_key:
     genai.configure(api_key=api_key)
 
 llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+from utils.api_handler import get_llm, safe_llm_invoke
 logger = logging.getLogger(__name__)
 
 # Global dict to store context caches
@@ -45,12 +46,8 @@ async def run_csv_query(file_path: str, question: str, session_id: str = "defaul
         if file_path not in CSV_SCHEMA_CACHES:
             columns = list(df.columns)
             
-            def truncate_value(v):
-                if isinstance(v, str) and len(v) > 100:
-                    return v[:100] + "..."
-                return v
-            
-            sample = df.head(1).map(truncate_value).to_dict(orient="records")
+            # Safest Hackathon Fix: Send only the CSV headers and the first 2 rows
+            sample = df.head(2).to_csv(index=False)
             dtype_summary = df.dtypes.apply(lambda x: x.name).to_dict()
             
             schema_str = ", ".join([f"{col}({dtype_summary[col]})" for col in columns])
@@ -112,7 +109,7 @@ Return ONLY valid Python code. No ```python blocks.
         if cached_content:
             try:
                 # Attempt to use cache via standard list syntax (supported in recent versions)
-                response = llm.invoke([cached_content, HumanMessage(content=task_prompt)])
+                response = safe_llm_invoke(get_llm(), [cached_content, HumanMessage(content=task_prompt)])
                 code = response.content.replace('```python', '').replace('```', '').strip()
             except Exception as e:
                 logger.warning(f"Failed to invoke LLM with cached content object: {e}")
@@ -124,7 +121,7 @@ Return ONLY valid Python code. No ```python blocks.
             # Token limit safety fallback on sample string length
             # Add monitoring log for token count
             try:
-                prompt_tokens = llm.get_num_tokens(full_prompt)
+                prompt_tokens = get_llm().get_num_tokens(full_prompt)
             except:
                 prompt_tokens = len(full_prompt) // 4 + 1000
                 
@@ -135,7 +132,7 @@ Return ONLY valid Python code. No ```python blocks.
                 safe_prefix = prompt_prefix.split("- Sample ")[0] + "- Sample: Not provided due to length constraints.\n"
                 full_prompt = safe_prefix + "\n" + task_prompt
 
-            response = llm.invoke([
+            response = safe_llm_invoke(get_llm(), [
                 SystemMessage(content="Return strictly Python code. No markdown. No explanations."),
                 HumanMessage(content=full_prompt)
             ])
