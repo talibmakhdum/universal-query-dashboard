@@ -35,24 +35,33 @@ def get_llm(model: str = "gemini-2.0-flash") -> ChatGoogleGenerativeAI:
 
 def safe_llm_invoke(llm: ChatGoogleGenerativeAI, messages: Any, **kwargs) -> Any:
     """
-    Exponential Backoff and Key Rotation on Quota errors.
+    Robust retry with Key Rotation and Model Fallback on Quota errors.
     """
-    max_retries = 3
-    for i in range(max_retries):
-        try:
-            return llm.invoke(messages, **kwargs)
-        except Exception as e:
-            error_str = str(e).lower()
-            if "429" in error_str or "exhausted" in error_str or "quota" in error_str:
-                wait_time = (i + 1) * 5
-                logger.warning(f"Quota hit or rate limit exceeded! Retrying in {wait_time}s with a new key...")
-                time.sleep(wait_time)
-                # Rotate key by recreating LLM temporarily for next attempt
-                new_key = get_next_key()
-                llm = ChatGoogleGenerativeAI(model=llm.model, google_api_key=new_key)
-                continue
-            else:
-                # Other errors should crash/return normally
-                raise e
+    models_to_try = [llm.model, "gemini-1.5-flash"]
+    total_keys = max(1, len(API_KEYS))
     
-    raise Exception("Error: API is currently overloaded. Max retries exhausted. Please try again.")
+    for current_model in models_to_try:
+        if not current_model:
+            continue
+            
+        for i in range(total_keys):
+            try:
+                # Update model if we fell back
+                if llm.model != current_model:
+                    new_key = get_next_key()
+                    llm = ChatGoogleGenerativeAI(model=current_model, google_api_key=new_key)
+                return llm.invoke(messages, **kwargs)
+            except Exception as e:
+                error_str = str(e).lower()
+                if "429" in error_str or "exhausted" in error_str or "quota" in error_str:
+                    logger.warning(f"Quota hit for {current_model}! Rotating key... (Attempt {i+1}/{total_keys})")
+                    time.sleep(1) # Underlying client already backs off, so we keep this brief
+                    # Rotate key
+                    new_key = get_next_key()
+                    llm = ChatGoogleGenerativeAI(model=current_model, google_api_key=new_key)
+                    continue
+                else:
+                    # Other errors should crash/return normally
+                    raise e
+                    
+    raise Exception("Error: API is currently overloaded across all available keys and fallback models. Please try again later.")

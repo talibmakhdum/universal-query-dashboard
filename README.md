@@ -41,6 +41,12 @@ A "visual-first" dashboard experience built for the modern era:
 - **Live System Health**: Monitor CPU, Memory, and Query success rates in real-time.
 - **Dynamic Context**: Seamlessly switch between database querying and CSV analysis modes.
 
+### 🛡️ Enterprise-Grade Failover & Rate Limiting (Hackathon Ready)
+Built to withstand heavy traffic and rigorous demo environments:
+- **API Key Rotation**: Dynamically cycles through multiple Gemini API keys (`HACKATHON_API_KEYS`) when quotas are exhausted.
+- **Automated Model Fallback**: If the primary `gemini-2.0-flash` model hits rate limits across all keys, the system automatically falls back to secondary models like `gemini-1.5-flash` to guarantee a successful query execution.
+- **Endpoint Rate Limiting**: Uses `slowapi` to protect backend endpoints from abusive traffic and ensure stability.
+
 ---
 
 ## 🛠 Tech Stack
@@ -89,7 +95,7 @@ npm install --legacy-peer-deps
 **Window 1 (Backend):**
 ```bash
 cd backend
-python app.pynpm 
+python app.py
 ```
 
 **Window 2 (Frontend):**

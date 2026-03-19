@@ -13,11 +13,12 @@ api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 if api_key:
     genai.configure(api_key=api_key)
 
-llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+
 from utils.api_handler import get_llm, safe_llm_invoke
 logger = logging.getLogger(__name__)
 
 # Global dict to store context caches
+
 CSV_SCHEMA_CACHES = {}
 
 async def run_csv_query(file_path: str, question: str, session_id: str = "default"):

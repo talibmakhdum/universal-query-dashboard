@@ -1,5 +1,9 @@
 import sys
 import os
+
+from dotenv import load_dotenv
+load_dotenv()
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Request
@@ -53,8 +57,8 @@ app.add_middleware(
 )
 
 # Validate environment
-if not os.getenv("GEMINI_API_KEY") and not os.getenv("GOOGLE_API_KEY"):
-    print("\n❌ ERROR: GEMINI_API_KEY is not set in environment variables.")
+if not os.getenv("GEMINI_API_KEY") and not os.getenv("GOOGLE_API_KEY") and not os.getenv("HACKATHON_API_KEYS"):
+    print("\nERROR: GEMINI_API_KEY or HACKATHON_API_KEYS is not set in environment variables.")
     print("Please create a .env file or set the variable to continue.\n")
 
 db_utils = DBUtils()
